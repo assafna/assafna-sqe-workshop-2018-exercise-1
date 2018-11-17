@@ -5,112 +5,150 @@ let lineNumber = 0;
 
 //original parse code function
 const parseCode = (codeToParse) => {
-    let parsedScript = esprima.parseScript(codeToParse, {loc: true});
-    result = [];
-    recursiveParse(parsedScript.body[0]);
+    let parsedScript = esprima.parseScript(codeToParse);
+    result = []; //new
+    recursiveParser(parsedScript);
     printToTable();
     return esprima.parseScript(codeToParse);
 };
 
 //main function
-function recursiveParse(codeToParse) {
-    lineNumber++;
-    if (codeToParse == null) return;
-    statementParser(codeToParse);
-    declarationParser(codeToParse);
-    if (codeToParse.body == null) return;
-    if (codeToParse.body.constructor === Array)
-        codeToParse.body.forEach(function (x) {
-            recursiveParse(x);
-        });
-    else
-        recursiveParse(codeToParse.body);
+function recursiveParser(code){
+    //stop condition
+    if (code == null || code.type == null) return;
+    typeParser1(code);
 }
 
-function statementParser(codeToParse){
-    if (codeToParse.type === 'BlockStatement') lineNumber--;
-    if (codeToParse.type === 'ExpressionStatement') expressionStatementParser(codeToParse.expression);
-    if (codeToParse.type === 'WhileStatement') whileStatementParser(codeToParse);
-    if (codeToParse.type === 'ReturnStatement') returnStatementParser(codeToParse);
-    if (codeToParse.type === 'IfStatement') ifStatementParser(codeToParse);
+function typeParser1(code){
+    if (code.type === 'Program') typeProgramParser(code);
+    else if (code.type === 'FunctionDeclaration') typeFunctionDeclarationParser(code);
+    else if (code.type === 'BlockStatement') typeBlockStatementParser(code);
+    else if (code.type === 'VariableDeclaration') typeVariableDeclarationParser(code);
+    else typeParser2(code);
 }
 
-function declarationParser(codeToParse){
-    if (codeToParse.type === 'FunctionDeclaration') functionParser(codeToParse);
-    if (codeToParse.type === 'VariableDeclaration') variableDeclarationParser(codeToParse.declarations);
+function typeParser2(code){
+    if (code.type === 'VariableDeclarator') typeVariableDeclaratorParser(code);
+    else if (code.type === 'ExpressionStatement') typeExpressionStatementParser(code);
+    else if (code.type === 'AssignmentExpression') typeAssignmentExpressionParser(code);
+    else typeParser3(code);
 }
 
-//parses functions
-function functionParser(functionExpression) {
-    // function itself
-    addToResult(lineNumber, 'FunctionDeclaration', functionExpression.id.name, null, null);
-
-    // params
-    if (functionExpression.params != null)
-        functionExpression.params.forEach(function (x) {
-            addToResult(lineNumber, x.type, x.name, null, null);
-        });
+function typeParser3(code){
+    if (code.type === 'WhileStatement') typeWhileStatementParser(code);
+    else if (code.type === 'IfStatement') typeIfStatementParser(code);
+    else if (code.type === 'ReturnStatement') typeReturnStatementParser(code);
 }
 
-//parses variables
-function variableDeclarationParser(declarations) {
-    declarations.forEach(function (x) {
-        addToResult(lineNumber, x.type, x.id.name, null, null);
+function typeProgramParser(code){
+    //ignore parse and continue
+    code.body.forEach(function (x) {
+        recursiveParser(x);
     });
 }
 
-//parses expression statements
-function expressionStatementParser(expression){
-    if (expression.type === 'AssignmentExpression'){
-        let value = null;
-        if (expression.right.type === 'Literal')
-            value = expression.right.value;
-        else if (expression.right.type === 'BinaryExpression')
-            value = recursiveExpressionStatementParser(expression.right, 0);
-        addToResult(lineNumber, expression.type, expression.left.name, null, value);
-    }
+function typeFunctionDeclarationParser(code){
+    //add function itself
+    addToResult(lineNumber, code.type, typeReturnValues(code.id), null, null);
+    //add params
+    functionParamsParser(code.params);
+    //body
+    recursiveParser(code.body);
 }
 
-//parses while statements
-function whileStatementParser(whileStatement){
-    // while itself
-    addToResult(lineNumber, whileStatement.type, null, recursiveExpressionStatementParser(whileStatement.test, 0), null);
-}
-
-//parses if statements
-function ifStatementParser(ifStatement) {
-    // if itself
-    addToResult(lineNumber, ifStatement.type, null, recursiveExpressionStatementParser(ifStatement.test, 0), null);
-    // consequent
-    recursiveParse(ifStatement.consequent);
-    // alternate
-    recursiveParse(ifStatement.alternate);
-}
-
-//recursive expressions parser
-function recursiveExpressionStatementParser(expression, recursionLevel){
-    // stop condition
-    if (expression.type === 'Identifier')
-        return expression.name;
-    else if (expression.type === 'Literal')
-        return expression.value;
-    else if (expression.type === 'MemberExpression')
-        return recursiveExpressionStatementParser(expression.object, 0) + '[' + recursiveExpressionStatementParser(expression.property, 0) + ']';
-    else if (expression.type === 'UnaryExpression')
-        return expression.operator + recursiveExpressionStatementParser(expression.argument, 0);
+function functionParamsParser(code){
+    //one param only
+    if (code.constructor !== Array)
+        addToResult(lineNumber, code.type, typeReturnValues(code), null, null);
+    //few params
     else
-    {
-        recursionLevel++;
-        if (recursionLevel > 1)
-            return '(' + recursiveExpressionStatementParser(expression.left, recursionLevel) + ' ' + expression.operator + ' ' + recursiveExpressionStatementParser(expression.right, recursionLevel) + ')';
-        else
-            return recursiveExpressionStatementParser(expression.left, recursionLevel) + ' ' + expression.operator + ' ' + recursiveExpressionStatementParser(expression.right, recursionLevel);
-    }
+        code.forEach(function (x) {
+            addToResult(lineNumber, x.type, typeReturnValues(x), null, null);
+        });
 }
 
-//parses return statements
-function returnStatementParser(returnStatement){
-    addToResult(lineNumber, returnStatement.type, null, null, recursiveExpressionStatementParser(returnStatement.argument, 0));
+function typeBlockStatementParser(code){
+    //ignore parse and continue
+    //one
+    if (code.body.constructor !== Array)
+        recursiveParser(code.body);
+    //few
+    else
+        code.body.forEach(function (x) {
+            recursiveParser(x);
+        });
+}
+
+function typeVariableDeclarationParser(code){
+    code.declarations.forEach(function (x) {
+        recursiveParser(x);
+    });
+}
+
+function typeVariableDeclaratorParser(code){
+    addToResult(lineNumber, code.type, typeReturnValues(code.id), null, null);
+}
+
+function typeExpressionStatementParser(code){
+    //ignore and continue
+    recursiveParser(code.expression);
+}
+
+function typeAssignmentExpressionParser(code){
+    addToResult(lineNumber, code.type, typeReturnValues(code.left), null, typeReturnValues(code.right));
+}
+
+function typeBinaryExpressionParser(code){
+    //return value
+    return typeReturnValues(code.left) + ' ' + code.operator + ' ' + typeReturnValues(code.right);
+}
+
+function typeWhileStatementParser(code){
+    //while itself
+    addToResult(lineNumber, code.type, null, typeReturnValues(code.test), null);
+    //body
+    recursiveParser(code.body);
+}
+
+function typeIfStatementParser(code){
+    //if itself
+    addToResult(lineNumber, code.type, null, typeReturnValues(code.test), null);
+    //consequent
+    recursiveParser(code.consequent);
+    //alternate
+    recursiveParser(code.alternate);
+}
+
+function typeReturnStatementParser(code){
+    addToResult(lineNumber, code.type, null, null, typeReturnValues(code.argument));
+}
+
+function typeReturnValues(code){
+    if (code.type === 'MemberExpression') return typeMemberExpressionParser(code);
+    else if (code.type === 'BinaryExpression') return typeBinaryExpressionParser(code);
+    else if (code.type === 'UnaryExpression') return typeUnaryExpressionParser(code);
+    else if (code.type === 'Literal') return typeLiteralParser(code);
+    return typeIdentifierParser(code);
+}
+
+function typeMemberExpressionParser(code){
+    //return value
+    return typeReturnValues(code.object) + '[' + typeReturnValues(code.property) + ']';
+}
+
+function typeUnaryExpressionParser(code){
+    //return value
+    return code.operator + typeReturnValues(code.argument);
+}
+
+function typeLiteralParser(code){
+    //return value
+    return code.value;
+}
+
+function typeIdentifierParser(code){
+    //return value
+    return code.name;
 }
 
 //adding to result array
