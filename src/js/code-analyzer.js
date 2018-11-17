@@ -20,24 +20,33 @@ function recursiveParser(code){
 }
 
 function typeParser1(code){
-    if (code.type === 'Program') typeProgramParser(code);
-    else if (code.type === 'FunctionDeclaration') typeFunctionDeclarationParser(code);
-    else if (code.type === 'BlockStatement') typeBlockStatementParser(code);
-    else if (code.type === 'VariableDeclaration') typeVariableDeclarationParser(code);
-    else typeParser2(code);
+    if (code.type === 'Program') return typeProgramParser(code);
+    else if (code.type === 'FunctionDeclaration') return typeFunctionDeclarationParser(code);
+    else if (code.type === 'BlockStatement') return typeBlockStatementParser(code);
+    else if (code.type === 'VariableDeclaration') return typeVariableDeclarationParser(code);
+    else return typeParser2(code);
 }
 
 function typeParser2(code){
-    if (code.type === 'VariableDeclarator') typeVariableDeclaratorParser(code);
-    else if (code.type === 'ExpressionStatement') typeExpressionStatementParser(code);
-    else if (code.type === 'AssignmentExpression') typeAssignmentExpressionParser(code);
-    else typeParser3(code);
+    if (code.type === 'VariableDeclarator') return typeVariableDeclaratorParser(code);
+    else if (code.type === 'ExpressionStatement') return typeExpressionStatementParser(code);
+    else if (code.type === 'AssignmentExpression') return typeAssignmentExpressionParser(code);
+    else return typeParser3(code);
 }
 
 function typeParser3(code){
-    if (code.type === 'WhileStatement') typeWhileStatementParser(code);
-    else if (code.type === 'IfStatement') typeIfStatementParser(code);
-    else if (code.type === 'ReturnStatement') typeReturnStatementParser(code);
+    if (code.type === 'WhileStatement') return typeWhileStatementParser(code);
+    else if (code.type === 'IfStatement') return typeIfStatementParser(code);
+    else if (code.type === 'ReturnStatement') return typeReturnStatementParser(code);
+    else return typeReturnValues(code);
+}
+
+function typeReturnValues(code){
+    if (code.type === 'MemberExpression') return typeMemberExpressionParser(code);
+    else if (code.type === 'BinaryExpression') return typeBinaryExpressionParser(code);
+    else if (code.type === 'UnaryExpression') return typeUnaryExpressionParser(code);
+    else if (code.type === 'Literal') return typeLiteralParser(code);
+    return typeIdentifierParser(code);
 }
 
 function typeProgramParser(code){
@@ -121,14 +130,6 @@ function typeIfStatementParser(code){
 
 function typeReturnStatementParser(code){
     addToResult(lineNumber, code.type, null, null, typeReturnValues(code.argument));
-}
-
-function typeReturnValues(code){
-    if (code.type === 'MemberExpression') return typeMemberExpressionParser(code);
-    else if (code.type === 'BinaryExpression') return typeBinaryExpressionParser(code);
-    else if (code.type === 'UnaryExpression') return typeUnaryExpressionParser(code);
-    else if (code.type === 'Literal') return typeLiteralParser(code);
-    return typeIdentifierParser(code);
 }
 
 function typeMemberExpressionParser(code){
