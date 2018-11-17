@@ -26,8 +26,7 @@ function typeParser1(code){
 }
 
 function typeParser2(code){
-    if (code.type === 'VariableDeclarator') return typeVariableDeclaratorParser(code);
-    else if (code.type === 'ExpressionStatement') return typeExpressionStatementParser(code);
+    if (code.type === 'ExpressionStatement') return typeExpressionStatementParser(code);
     else if (code.type === 'AssignmentExpression') return typeAssignmentExpressionParser(code);
     else return typeParser3(code);
 }
@@ -36,8 +35,7 @@ function typeParser3(code){
     if (code.type === 'WhileStatement') return typeWhileStatementParser(code);
     else if (code.type === 'IfStatement') return typeIfStatementParser(code);
     else if (code.type === 'ForStatement') return typeForStatementParser(code);
-    else if (code.type === 'ReturnStatement') return typeReturnStatementParser(code);
-    // else return typeReturnValues(code);
+    return typeReturnStatementParser(code);
 }
 
 function typeReturnValues(code){
@@ -60,8 +58,7 @@ function typeFunctionDeclarationParser(code){
     //add function itself
     addToResult(lineNumber, code.type, typeReturnValues(code.id), null, null);
     //add params
-    if (code.params != null)
-        functionParamsParser(code.params);
+    functionParamsParser(code.params);
     lineNumber++;
     //body
     recursiveParser(code.body);
@@ -84,7 +81,7 @@ function typeBlockStatementParser(code){
 
 function typeVariableDeclarationParser(code){
     code.declarations.forEach(function (x) {
-        recursiveParser(x);
+        typeVariableDeclaratorParser(x);
     });
     lineNumber++;
 }
@@ -185,3 +182,5 @@ function addToResult(line, type, name, condition, value) {
 }
 
 export {recursionParser};
+
+export {recursiveParser};

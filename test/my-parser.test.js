@@ -1,7 +1,22 @@
 import assert from 'assert';
 import {recursionParser} from '../src/js/my-parser';
+import {recursiveParser} from '../src/js/my-parser';
 
 describe('My parser', () => {
+    it('is parsing an empty code', () => {
+        assert.equal(
+            JSON.stringify(recursiveParser(null)),
+            undefined
+        );
+    });
+
+    it('is parsing a code with no type', () => {
+        assert.equal(
+            JSON.stringify(recursiveParser('{"test":"test"}')),
+            undefined
+        );
+    });
+
     it('is parsing an empty function correctly', () => {
         assert.equal(
             JSON.stringify(recursionParser('')),
@@ -168,6 +183,35 @@ describe('My parser', () => {
             '"name":"x",' +
             '"condition":null,' +
             '"value":"y"' +
+            '}' +
+            ']'
+        );
+    });
+
+    it('is parsing simple if statement with else', () => {
+        assert.equal(
+            JSON.stringify(recursionParser('if (x < y)\nx = y;\nelse\nx = x[y];')),
+            '[' +
+            '{' +
+            '"line":1,' +
+            '"type":"IfStatement",' +
+            '"name":null,' +
+            '"condition":"x < y",' +
+            '"value":null' +
+            '},' +
+            '{' +
+            '"line":2,' +
+            '"type":"AssignmentExpression",' +
+            '"name":"x",' +
+            '"condition":null,' +
+            '"value":"y"' +
+            '},' +
+            '{' +
+            '"line":4,' +
+            '"type":"AssignmentExpression",' +
+            '"name":"x",' +
+            '"condition":null,' +
+            '"value":"x[y]"' +
             '}' +
             ']'
         );
