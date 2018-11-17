@@ -8,8 +8,10 @@ const parseCode = (codeToParse) => {
     result = []; //new
     lineNumber = 0; //new
     recursiveParser(parsedScript);
-    buildTable();
-    printToTable();
+    if (typeof document !== 'undefined') {
+        buildTable();
+        printToTable();
+    }
     return esprima.parseScript(codeToParse);
 };
 
@@ -37,6 +39,7 @@ function typeParser2(code){
 function typeParser3(code){
     if (code.type === 'WhileStatement') return typeWhileStatementParser(code);
     else if (code.type === 'IfStatement') return typeIfStatementParser(code);
+    else if (code.type === 'ForStatement') return typeForStatementParser(code);
     else if (code.type === 'ReturnStatement') return typeReturnStatementParser(code);
     else return typeReturnValues(code);
 }
@@ -140,6 +143,15 @@ function typeIfStatementParser(code){
     lineNumber++;
 }
 
+function typeForStatementParser(code){
+    //for itself
+    addToResult(lineNumber, code.type, null, typeReturnValues(code.test), null);
+    lineNumber++;
+    //body
+    recursiveParser(code.body);
+    lineNumber++;
+}
+
 function typeReturnStatementParser(code){
     addToResult(lineNumber, code.type, null, null, typeReturnValues(code.argument));
 }
@@ -176,8 +188,6 @@ function addToResult(line, type, name, condition, value) {
 }
 
 function buildTable(){
-    if (document == null)
-        return;
     let div = document.getElementById('result');
     div.removeChild(div.firstChild);
     let table = document.createElement('table');
@@ -214,8 +224,6 @@ function buildTableCols(tableBody){
 }
 
 function printToTable(){
-    if (document == null)
-        return;
     let table = document.getElementById('resultTable');
     result.forEach(function (x) {
         let row = table.insertRow(table.rows.length);
