@@ -1,18 +1,18 @@
 import * as esprima from 'esprima';
 
 let result;
-let lineNumber = 0;
+let lineNumber;
 
-//original parse code function
 const parseCode = (codeToParse) => {
     let parsedScript = esprima.parseScript(codeToParse);
     result = []; //new
+    lineNumber = 0; //new
     recursiveParser(parsedScript);
+    buildTable();
     printToTable();
     return esprima.parseScript(codeToParse);
 };
 
-//main function
 function recursiveParser(code){
     //stop condition
     if (code == null || code.type == null) return;
@@ -52,6 +52,7 @@ function typeReturnValues(code){
 function typeProgramParser(code){
     //ignore parse and continue
     code.body.forEach(function (x) {
+        lineNumber++;
         recursiveParser(x);
     });
 }
@@ -74,6 +75,7 @@ function functionParamsParser(code){
         code.forEach(function (x) {
             addToResult(lineNumber, x.type, typeReturnValues(x), null, null);
         });
+    lineNumber++;
 }
 
 function typeBlockStatementParser(code){
@@ -92,15 +94,21 @@ function typeVariableDeclarationParser(code){
     code.declarations.forEach(function (x) {
         recursiveParser(x);
     });
+    lineNumber++;
 }
 
 function typeVariableDeclaratorParser(code){
-    addToResult(lineNumber, code.type, typeReturnValues(code.id), null, null);
+    //check if init
+    if (code.init != null)
+        addToResult(lineNumber, code.type, typeReturnValues(code.id), null, typeReturnValues(code.init));
+    else
+        addToResult(lineNumber, code.type, typeReturnValues(code.id), null, null);
 }
 
 function typeExpressionStatementParser(code){
     //ignore and continue
     recursiveParser(code.expression);
+    lineNumber++;
 }
 
 function typeAssignmentExpressionParser(code){
@@ -115,17 +123,21 @@ function typeBinaryExpressionParser(code){
 function typeWhileStatementParser(code){
     //while itself
     addToResult(lineNumber, code.type, null, typeReturnValues(code.test), null);
+    lineNumber++;
     //body
     recursiveParser(code.body);
+    lineNumber++;
 }
 
 function typeIfStatementParser(code){
     //if itself
     addToResult(lineNumber, code.type, null, typeReturnValues(code.test), null);
+    lineNumber++;
     //consequent
     recursiveParser(code.consequent);
     //alternate
     recursiveParser(code.alternate);
+    lineNumber++;
 }
 
 function typeReturnStatementParser(code){
@@ -152,7 +164,6 @@ function typeIdentifierParser(code){
     return code.name;
 }
 
-//adding to result array
 function addToResult(line, type, name, condition, value) {
     let json = {
         'line': line,
@@ -164,7 +175,44 @@ function addToResult(line, type, name, condition, value) {
     result.push(json);
 }
 
-//print all content to table
+function buildTable(){
+    if (document == null)
+        return;
+    let div = document.getElementById('result');
+    div.removeChild(div.firstChild);
+    let table = document.createElement('table');
+    div.appendChild(table);
+    table.setAttribute('id', 'resultTable');
+    let tableHead = document.createElement('thead');
+    table.appendChild(tableHead);
+    let title = document.createElement('h1');
+    tableHead.appendChild(title);
+    title.innerHTML = 'Result Table';
+    let tableBody = document.createElement('tbody');
+    table.appendChild(tableBody);
+    buildTableCols(tableBody);
+}
+
+function buildTableCols(tableBody){
+    let firstRow = document.createElement('tr');
+    tableBody.appendChild(firstRow);
+    let lineCol = document.createElement('th');
+    lineCol.innerHTML = 'Line';
+    let typeCol = document.createElement('th');
+    typeCol.innerHTML = 'Type';
+    let nameCol = document.createElement('th');
+    nameCol.innerHTML = 'Name';
+    let conditionCol = document.createElement('th');
+    conditionCol.innerHTML = 'Condition';
+    let valueCol = document.createElement('th');
+    valueCol.innerHTML = 'Value';
+    firstRow.appendChild(lineCol);
+    firstRow.appendChild(typeCol);
+    firstRow.appendChild(nameCol);
+    firstRow.appendChild(conditionCol);
+    firstRow.appendChild(valueCol);
+}
+
 function printToTable(){
     if (document == null)
         return;
