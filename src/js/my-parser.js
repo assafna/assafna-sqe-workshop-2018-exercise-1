@@ -28,6 +28,7 @@ function typeParser1(code){
 function typeParser2(code){
     if (code.type === 'ExpressionStatement') return typeExpressionStatementParser(code);
     else if (code.type === 'AssignmentExpression') return typeAssignmentExpressionParser(code);
+    else if (code.type === 'EmptyStatement') return;
     else return typeParser3(code);
 }
 
